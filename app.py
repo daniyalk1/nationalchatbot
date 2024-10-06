@@ -1,11 +1,12 @@
 import json
 from flask import Flask, request, jsonify
-from mistralai import Mistral
+from mistralai.client import MistralClient
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
-
+from mistralai.models.chat_completion import ChatMessage
+from flask_cors import CORS
 app = Flask(__name__)
-
+CORS(app, resources={r"/recipe": {"origins": "http://localhost:3000"}})
 # ===========================
 # Initialization and Setup
 # ===========================
@@ -13,7 +14,7 @@ app = Flask(__name__)
 # API and model setup
 api_key = "uAyQH2qjnN5Batgf1YDp24KB3BLKLHBK"
 model = "open-mistral-7b"
-mistral_client = Mistral(api_key=api_key)
+mistral_client = MistralClient(api_key=api_key)
 
 # Encoder and Qdrant client setup
 encoder = SentenceTransformer("all-MiniLM-L6-v2")
@@ -67,6 +68,7 @@ def generate_recipe_response(user_ingredients, search_results):
     """
     Generate a recipe suggestion using Mistral AI based on the search results.
     """
+    user_input=user_ingredients
     if not search_results:
         return "I couldn't find any recipes matching your ingredients."
 
@@ -79,23 +81,19 @@ def generate_recipe_response(user_ingredients, search_results):
     ])
 
     # Prepare the messages for Mistral AI
-    messages = [
-        {
-            "role": "system",
-            "content": "You are a helpful assistant. Here are some recipes based on the user's ingredients:\n\n"
-                   f"{context}"
-        },
-        {
-            "role": "user",
-            "content": user_ingredients
-        }
-    ]
+    final_prompt=(f"you represent National foods.if the user message is only about greetings respond him in that manner.If user asks about any thing related to food or recipe creation use the context below to answer him in that manner "
+        f"Regards should always be from national food bot"
+        f"Context:\n{context}\n\nUser Query:\n{user_input}\n\nResponse:")
 
     # Call the Mistral client to generate a response
-    chat_response = mistral_client.chat.complete(
-        model=model,
-        messages=messages
-    )
+    chat_response = mistral_client.chat(
+                model=model,
+                messages=[
+                    ChatMessage(role="system", content=final_prompt),
+                    ChatMessage(role="user", content=user_input),
+                    
+                ]
+            )
     
     return chat_response.choices[0].message.content if chat_response.choices else "No response from Mistral AI."
 
@@ -135,5 +133,5 @@ def home():
 # Run the Flask App
 # ===========================
 
-if __name__ == '_main_':
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

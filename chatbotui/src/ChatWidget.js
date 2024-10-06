@@ -23,7 +23,7 @@ const ChatWidget = () => {
 
         try {
             const response = await axios.post('http://localhost:5000/recipe', {
-                text: userMessage,
+                ingredients: userMessage,
             });
 
             const botMessage = response.data.response
@@ -49,8 +49,11 @@ const ChatWidget = () => {
 
     return (
         <div className="chat-widget">
-            <div className="chat-header">DoctHers Chatbot</div>
+            <div className="chat-header">National Foods</div>
             <div className="chat-body" ref={chatBodyRef}>
+                <div className="chat-body-background">
+                    
+                </div>
                 {messages.map(getMessage)}
             </div>
             <div className="chat-footer">
